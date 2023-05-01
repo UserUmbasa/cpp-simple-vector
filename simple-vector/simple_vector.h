@@ -1,11 +1,11 @@
-// вставьте сюда ваш код для класса SimpleVector
-// внесите необходимые изменения для поддержки move-семантики
+
 #include <cassert>
 #include <initializer_list>
 #include "array_ptr.h"
 #include <iterator>
 #include <iostream>
 #include <algorithm>
+#include <utility>
 
 
 using namespace std;
@@ -53,10 +53,7 @@ public:
     SimpleVector(SimpleVector<Type>&& other) : arr(other.size_)
     {
         // Напишите тело конструктора самостоятельно
-        size_ = other.size_;
-        capacity_ = other.capacity_;
         swap(other);
-        other.Clear();   
     }
 
     // Создаёт вектор из std::initializer_list
@@ -66,12 +63,11 @@ public:
         size_ = init.size();
         capacity_ = init.size();
         copy(init.begin(), init.end(), begin());
-        //for (auto x : tmp) { cout << x; }
     }
 
-    SimpleVector(ReserveProxyObj capacity)      
+    SimpleVector(ReserveProxyObj capacity)  
     {
-        Reserve(capacity.capacity_);
+       Reserve(capacity.capacity_);
     }
 
     // Возвращает количество элементов в массиве
@@ -95,6 +91,7 @@ public:
     Type& operator[](size_t index) noexcept
     {
         // Напишите тело самостоятельно
+        assert(index < size_);
         return arr[index];
     }
 
@@ -102,6 +99,7 @@ public:
     const Type& operator[](size_t index) const noexcept
     {
         // Напишите тело самостоятельно
+        assert(index < size_);
         return arr[index];
     }
 
@@ -135,35 +133,25 @@ public:
         // Напишите тело самостоятельно
         size_ = 0;
     }
-void Resize(size_t new_size)
-    {
-        if (new_size > capacity_)
-        {
-            ArrayPtr<Type> tmp(new_size);
-            for (size_t i = 0; i < size_; i++)
-            {
-                tmp[i] = move(arr[i]);
-            }
-            arr.swap(tmp);
-            capacity_ = new_size;
-        }
+
+    // Изменяет размер массива.
+    void Resize(size_t new_size)
+    {      
+        Reserve(new_size);
         for (size_t i = size_; i < new_size; ++i) {
             arr[i] = Type();
         }
-        size_ = new_size;
-        // Напишите тело самостоятельно
-        
+        size_ = new_size; 
     }
-    
     // Добавляет элемент в конец вектора
     // При нехватке места увеличивает вдвое вместимость вектора
     void PushBack(const Type& item)
     {
-        Insert(begin() + size_, item);
+        Insert(end(), item);
     }
     void PushBack(Type&& item)
     {            
-        Insert(begin() + size_, move(item));
+        Insert(end(), move(item));
     }
 
 
@@ -171,20 +159,16 @@ void Resize(size_t new_size)
     void PopBack() noexcept
     {
         // Напишите тело самостоятельно
-        if (!IsEmpty()) { --size_; }
-
+        assert(size_ > 0);
+        --size_;
     }
     // Обменивает значение с другим вектором
     void swap(SimpleVector& other) noexcept
     {
         // Напишите тело самостоятельно
         arr.swap(other.arr);
-        size_t size_tmp = other.size_;
-        size_t capacity_tmp = other.capacity_;
-        other.size_ = size_;
-        size_ = size_tmp;
-        other.capacity_ = capacity_;
-        capacity_ = capacity_tmp;
+        std::swap(size_, other.size_);
+        std::swap(capacity_, other.capacity_);
     }
     //Reserve задает ёмкость вектора
     void Reserve(size_t new_capacity)
@@ -196,7 +180,7 @@ void Resize(size_t new_size)
             {
                 for (size_t i = 0; i < size_; i++)
                 {
-                    tmp[i] = arr[i];
+                    tmp[i] = move(arr[i]);
                 }
             }
             arr.swap(tmp);
@@ -212,6 +196,8 @@ void Resize(size_t new_size)
     Iterator Insert(ConstIterator pos, const Type& value)
     {
         // Напишите тело самостоятельно
+        assert(size_t(distance(begin(), (Iterator)pos)) <= size_);
+
         if (size_ == 0) { Resize(1); *begin() = value; return begin(); }
         if (size_ < capacity_)
         {
@@ -238,7 +224,8 @@ void Resize(size_t new_size)
     Iterator Insert(ConstIterator pos,  Type&& value)
     {
          //Напишите тело самостоятельно
-
+        assert(size_t(distance(begin(), (Iterator)pos)) <= size_);
+        
         if (size_ == 0) { Resize(1); *begin() = move(value); return begin(); }
         if (size_ < capacity_)
         {
@@ -264,6 +251,7 @@ void Resize(size_t new_size)
     Iterator Erase(ConstIterator pos)
     {
         // Напишите тело самостоятельно
+        assert(size_t(distance(begin(), (Iterator)pos)) <= size_);
         move(next(Iterator(pos)), end(), Iterator(pos)); 
         --size_;
         return Iterator(pos);
@@ -341,6 +329,7 @@ ReserveProxyObj Reserve(size_t capacity_to_reserve) {
 template <typename Type>
 inline bool operator==(const SimpleVector<Type>& lhs, const SimpleVector<Type>& rhs)
 {
+    if (lhs.GetSize() != rhs.GetSize()) { return false; }
     return equal(lhs.begin(), lhs.end(), rhs.begin());
 }
 template <typename Type>
