@@ -1,9 +1,6 @@
-// вставьте сюда ваш код для класса ArrayPtr
-// внесите в него изменения, 
-// которые позволят реализовать move-семантику
 #include <cassert>
 #include <cstdlib>
-
+#include <algorithm>
 using namespace std;
 template <typename Type>
 class ArrayPtr {
@@ -16,11 +13,7 @@ public:
 	explicit ArrayPtr(size_t size)
 	{
 		// Реализуйте конструктор самостоятельно
-		if (size == 0)
-		{
-			raw_ptr_ = nullptr;
-		}
-		else
+		if (size > 0)
 		{
 			raw_ptr_ = new Type[size];
 		}
@@ -30,6 +23,16 @@ public:
 	explicit ArrayPtr(Type* raw_ptr) noexcept {
 		// Реализуйте конструктор самостоятельно
 		raw_ptr_ = raw_ptr;
+	}
+	//Конструктор перемещения.
+    ArrayPtr(ArrayPtr<Type>&& other) noexcept {
+		// Реализуйте конструктор самостоятельно
+		swap(other);
+		
+	}
+	ArrayPtr& operator=(ArrayPtr&& other) {
+		raw_ptr_ = exchange(other.raw_ptr_, nullptr);
+		return *this;
 	}
 
 	// Запрещаем копирование
@@ -68,14 +71,7 @@ public:
 	// Возвращает true, если указатель ненулевой, и false в противном случае
 	explicit operator bool() const {
 		// Заглушка. Реализуйте операцию самостоятельно
-		if (raw_ptr_)
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		return raw_ptr_;
 	}
 
 	// Возвращает значение сырого указателя, хранящего адрес начала массива
@@ -89,11 +85,9 @@ public:
 	void swap(ArrayPtr& other) noexcept
 	{
 		// Реализуйте метод самостоятельно
-		Type* tmp = raw_ptr_;
-		raw_ptr_ = other.raw_ptr_;
-		other.raw_ptr_ = tmp;
+		std::swap(raw_ptr_, other.raw_ptr_);
 	}
-	Type* raw_ptr_ = nullptr;
+
 private:
-	//Type* raw_ptr_ = nullptr;
+	Type* raw_ptr_=nullptr ;
 };
