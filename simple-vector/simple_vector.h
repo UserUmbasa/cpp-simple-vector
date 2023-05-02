@@ -251,7 +251,7 @@ public:
     Iterator Erase(ConstIterator pos)
     {
         // Напишите тело самостоятельно
-        assert(size_t(distance(begin(), (Iterator)pos)) <= size_);
+        assert(size_>0);
         move(next(Iterator(pos)), end(), Iterator(pos)); 
         --size_;
         return Iterator(pos);
